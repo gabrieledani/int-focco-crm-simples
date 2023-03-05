@@ -1,0 +1,84 @@
+SELECT cli.COD_CLI||'-'||est.COD_EST                                    AS idExterno, 
+       NULL                                              AS organizacao,
+       focco3i_util.Converte_acentos(cli.descricao)                     AS nome, 
+       CASE WHEN est.tp_pes = 'F' THEN 'Fisica' ELSE 'Juridica' END     AS tipoPessoa, 
+       Nvl(lpad(est.cnpj,14,'0'), lpad(est.cpf,11,'0'))                                           AS cnpjCpf, 
+       'FOCCOERP'                                                       AS fontecontato, 
+       (CASE WHEN este.ativo = 1 THEN tc.cod_tp_cli ELSE 0 END)         AS statusContato,
+       cnt.DT_NASC                                                      AS dataNascimento, 
+       focco3i_util.Converte_acentos(cli.obs)                                                          AS observacoes, 
+       'Todos'                                                          AS visivelPara, 
+       1                                                             AS ranking, 
+       0                                                             AS score, 
+       0                                                             AS idUsuarioInclusao, 
+       '29'                                                             AS idExternoUsuarioInclusao, 
+       est.dt_cad                                                       AS contatoDesde, 
+       NVL((CASE 
+         WHEN cli.est_id_cobr = est.id THEN 'Cobranca' 
+         WHEN cli.est_id_entr = est.id THEN 'Entrega'  
+       END),'Outro')                                                    AS selectTipoEndereco, 
+       focco3i_util.Converte_acentos(est.LOGRADOURO )                   AS endereco, 
+       est.nr_endereco                                                  AS numero, 
+       focco3i_util.Converte_acentos(est.complemento)                   AS complemento, 
+       focco3i_util.Converte_acentos(est.bairro)                        AS bairro,
+       focco3i_util.Converte_acentos(cid.cidade)                        AS cidade, 
+       uf.uf                                                            AS uf, 
+       est.CEP                                                          AS cep,
+       focco3i_util.Converte_acentos(pais.descricao)                    AS pais,
+       
+       tel.ddd || tel.telefone                                          AS descricao_fone, 
+       CASE 
+         WHEN tel.tp_tel = 'M' THEN 'Celular' 
+         WHEN tel.tp_tel = 'F' THEN 'Fax' 
+         WHEN tel.tp_tel = 'R' THEN 'Residencial' 
+         WHEN tel.tp_tel = 'C' THEN 'Trabalho' 
+         ELSE 'Outro' 
+       END                                                              AS selectTipo_fone, 
+       mail.e_mail                                                      AS descricao_email, 
+       CASE WHEN mail.e_mail IS NOT NULL THEN 'Trabalho'END             AS selectTipo_email,
+       focco3i_util.Converte_acentos(cnt.descricao)                     AS nome_contato, 
+       focco3i_util.Converte_acentos(tp_cnt.descricao)                                                 AS cargoRelacao, 
+       tel_cnt.ddd || tel_cnt.telefone                                  AS fone, 
+       mail_cnt.e_mail                                                  AS email, 
+       (SELECT WM_CONCAT(DISTINCT rep.cod_rep) 
+          FROM test_rep est_rep,
+               trepresentantes rep
+         WHERE rep.id = est_rep.rep_id
+           AND est_rep.est_id = est.id 
+           AND est_rep.empcli_id = clie.id)                             AS listIdExternoResponsaveis, 
+       EMP.COD_EMP                                                      AS idtag, 
+       EMP.RAZAO_SOCIAL                                                 AS desctag
+FROM   tclientes cli,
+       ttp_cli tc,
+       testabelecimentos est,
+       temp_cli clie,
+       tempresas emp,
+       temp_est este,
+       tcontatos cnt,
+       tcidades cid,
+       tufs uf,
+       tpaises pais,
+       ttel_est tel,
+       temail_est mail,
+       ttp_cnt tp_cnt,
+       ttel_cnt tel_cnt,
+       temail_cnt mail_cnt
+ WHERE cli.cod_cli in (33105,32636,25766,13804,5692,33111,33767)
+   AND est.ttp_cli_id = tc.id
+   AND est.cli_id = cli.id
+   AND clie.cli_id = cli.id
+   AND clie.empr_id = emp.id
+   AND este.est_id = est.id 
+   AND este.empcli_id = clie.id 
+   AND cnt.est_id(+) = est.id
+   AND est.cid_id = cid.id
+   AND cid.UF_ID = uf.id
+   AND uf.PAIS_ID = pais.id
+   AND tel.est_id(+) = est.id
+   AND mail.est_id(+) = est.id 
+   AND cnt.tpcnt_id = tp_cnt.id(+)
+   AND cnt.id = tel_cnt.cnt_id(+)  
+   AND cnt.id = mail_cnt.cnt_id(+)
+   AND cli.cod_cli NOT in (5135)
+order by cli.cod_cli, 
+          est.cod_est;
